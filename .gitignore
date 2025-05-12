@@ -1,0 +1,71 @@
+# === Básico React Native / Expo ===
+node_modules/
+.expo/
+.expo-shared/
+web-build/
+dist/
+build/
+android/
+ios/
+# EAS outputs
+*.apk
+*.aab
+*.ipa
+
+# Archivos de sistema / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Entorno / Secrets
+.env
+.env.*            # .env.development, etc.
+
+# Cache Metro / Babel
+.cache/
+babel.config.js.tmp
+
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
