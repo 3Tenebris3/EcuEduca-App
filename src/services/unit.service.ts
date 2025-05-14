@@ -1,22 +1,40 @@
 
+/* --- DTOs que ya usabas --- */
 export interface UnitDto {
   id: string;
-  title: string;
   order: number;
+  title: string;
 }
 
+/* --- listado de unidades ------------------------------------ */
 export async function getUnits(groupId: string): Promise<UnitDto[]> {
   try {
     return [
-      { id: "u-1", title: "Unidad 1 · Introducción", order: 1 },
-      { id: "u-2", title: "Unidad 2 · Civilizaciones", order: 2 },
+      { id: "u1", order: 1, title: "Introducción" },
+      { id: "u2", order: 2, title: "Civilizaciones" },
     ];
-    //const { data } = await client.get(`/groups/${groupId}/units`);
-    //return data.data as UnitDto[];
+    //const r = await api.get(`/groups/${groupId}/units`);
+    //return r.data.data;                // ← back real
   } catch {
+    /* mock de 2 unidades */
     return [
-      { id: "u-1", title: "Unidad 1 · Introducción", order: 1 },
-      { id: "u-2", title: "Unidad 2 · Civilizaciones", order: 2 },
+      { id: "u1", order: 1, title: "Introducción" },
+      { id: "u2", order: 2, title: "Civilizaciones" },
     ];
+  }
+}
+
+/* --- qué recursos hay en la unidad --------------------------- */
+export async function getUnitResources(unitId: string): Promise<{
+  ra: boolean;
+  mini: boolean;
+  quiz: boolean;
+}> {
+  try {
+    return { ra: true, mini: true, quiz: true }; // mock: todo activo
+    //const r = await api.get(`/units/${unitId}/resources`);
+    //return r.data.data;                // ← { ra:true, mini:false, quiz:true }
+  } catch {
+    return { ra: true, mini: true, quiz: true }; // mock: todo activo
   }
 }
