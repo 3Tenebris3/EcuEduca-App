@@ -1,18 +1,19 @@
 import {
-    Entypo,
-    FontAwesome5,
-    Ionicons,
-    MaterialCommunityIcons,
-    MaterialIcons,
+  Entypo,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
 } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -23,31 +24,31 @@ const MinigamesScreen = () => {
       title: "Trivia",
       icon: <Ionicons name="help-circle-outline" size={30} color="#fff" />,
       color: "#4CAF50",
-      onPress: () => console.log("Ir a Trivia"),
+      onPress: () => router.push("/minigames/trivia-list"),
     },
     {
       title: "Memoriza",
       icon: <MaterialIcons name="memory" size={30} color="#fff" />,
       color: "#FF9800",
-      onPress: () => console.log("Ir a Memoriza"),
+      onPress: () => router.push("/minigames/memory-list"), // <- NUEVO
     },
     {
       title: "Elige rápido",
       icon: <MaterialCommunityIcons name="flash" size={30} color="#fff" />,
       color: "#2196F3",
-      onPress: () => console.log("Ir a Elige rápido"),
+      onPress: () => router.push("/minigames/quickpick-list"),
     },
     {
       title: "Completa la frase",
       icon: <FontAwesome5 name="pencil-alt" size={26} color="#fff" />,
       color: "#9C27B0",
-      onPress: () => console.log("Ir a Completa la frase"),
+      onPress: () => router.push("/minigames/fillblank-list"),
     },
     {
       title: "Secuencia correcta",
       icon: <Entypo name="flow-line" size={30} color="#fff" />,
       color: "#F44336",
-      onPress: () => console.log("Ir a Secuencia correcta"),
+      onPress: () => router.push("/minigames/sequence-list"),
     },
   ];
 

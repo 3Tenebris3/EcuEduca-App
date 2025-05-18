@@ -1,4 +1,8 @@
-import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -10,7 +14,6 @@ import {
   View,
 } from "react-native";
 
-
 const { width } = Dimensions.get("window");
 
 const IndexScreen = () => {
@@ -21,25 +24,31 @@ const IndexScreen = () => {
       title: "Escenarios",
       icon: <Ionicons name="planet" size={30} color="#fff" />,
       color: "#4CAF50",
-      onPress: () => console.log("Ir a Escenarios"),
+      onPress: () => router.push("/scenarios"),
     },
     {
       title: "Minijuegos",
       icon: <FontAwesome5 name="gamepad" size={26} color="#fff" />,
       color: "#FF9800",
       onPress: () => router.push("/minigames"),
-    },    
+    },
     {
       title: "Cuestionarios",
-      icon: <MaterialCommunityIcons name="file-question-outline" size={30} color="#fff" />,
+      icon: (
+        <MaterialCommunityIcons
+          name="file-question-outline"
+          size={30}
+          color="#fff"
+        />
+      ),
       color: "#2196F3",
-      onPress: () => console.log("Ir a Cuestionarios"),
+      onPress: () => router.push("/quizzes"), // ← lista
     },
     {
       title: "Recompensas",
       icon: <Ionicons name="gift-outline" size={30} color="#fff" />,
       color: "#9C27B0",
-      onPress: () => console.log("Ir a Recompensas"),
+      onPress: () => router.push("/rewards"),
     },
   ];
 
