@@ -41,7 +41,7 @@ const SCENES: Scene[] = [
 
 export default function ScenariosList() {
   const enterScene = (s: Scene) =>
-    router.push({ pathname: "/scenarios/play", params: { id: s.id } });
+    router.push({ pathname: "/scenarios/preview", params: { id: s.id } })
 
   return (
     <ScrollView contentContainerStyle={styles.wrapper}>
