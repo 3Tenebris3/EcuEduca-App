@@ -13,7 +13,7 @@ export const SCENES: SceneMeta[] = [
     id: "piramide",
     title: "Gran Pirámide",
     desc: "Explora los pasajes milenarios.",
-    glbUrl: "https://cdn.jsdelivr.net/gh/3Tenebris3/EcuEduca-App@main/assets/models/wwtwoBuilding.glb",
+    glbUrl: "https://cdn.jsdelivr.net/gh/3Tenebris3/EcuEduca-App@main/assets/models/wwtwoBuilding_draco.glb",
     preview: require("../../assets/scenes/pyramid.png"),
     audio: null,
   },
