@@ -43,7 +43,12 @@ const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#F1F8E9" },
   img: { width: "100%", height: "55%" },
   info: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 8, color: "#33691E" },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#33691E",
+  },
   desc: { fontSize: 16, color: "#4E342E", marginBottom: 16 },
   btn: {
     backgroundColor: "#2196F3",
