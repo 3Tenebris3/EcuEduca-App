@@ -13,7 +13,6 @@ import { Swipeable } from "react-native-gesture-handler";
 import { Screen } from "../../src/components/layout/Screen";
 import {
   deleteNotification,
-  getNotifications,
   Notification
 } from "../../src/services/notification.service";
 import { useAuthStore } from "../../src/store/useAuthStore";
@@ -48,8 +47,9 @@ export default function NotificationsScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const apiList = await getNotifications();
-        setList(apiList.length ? apiList : MOCK);
+        setList(MOCK);
+        //const apiList = await getNotifications();
+        //setList(apiList.length ? apiList : MOCK);
       } catch {
         setList(MOCK);
       } finally {

@@ -11,8 +11,7 @@ import {
 } from "react-native";
 import {
   avatarSrc,
-  fetchLeaderboard,
-  Row,
+  Row
 } from "../../src/services/leaderboard.service";
 import { colors } from "../../src/theme/colors";
 
@@ -31,8 +30,9 @@ export default function LeaderboardScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const apiRows = await fetchLeaderboard();
-        setRows(apiRows.length ? apiRows : MOCK);
+        setRows(MOCK);
+        //const apiRows = await fetchLeaderboard();
+        //setRows(apiRows.length ? apiRows : MOCK);
       } catch {
         setRows(MOCK);
       }

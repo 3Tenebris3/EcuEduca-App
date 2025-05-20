@@ -5,7 +5,6 @@ import { extractApiError } from "@/utils/error.util";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { login } from "../../src/services/auth.service";
 import { useAuthStore } from "../../src/store/useAuthStore";
 
 export default function LoginScreen() {
@@ -20,7 +19,14 @@ export default function LoginScreen() {
     setErrorMessage("");
     try {
       setLoading(true);
-      const user = await login({ email, password });
+      //const user = await login({ email, password });
+      // Mock user info for testing
+      const user = {
+        id: 1,
+        name: "Usuario Demo",
+        email,
+        token: "mock-token-123",
+      };
       setUser(user);
       router.replace("/(tabs)");
     } catch (e: any) {
