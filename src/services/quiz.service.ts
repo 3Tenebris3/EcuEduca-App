@@ -1,105 +1,49 @@
-import { AttemptDoc, QuizDoc } from "@/types/quiz.types";
+import api from "../api/client";
 
+export type QuizMeta = {
+  id: string;
+  title: string;
+  total: number;      // número de preguntas
+  completed: boolean;
+  score: number;      // aciertos (si completed)
+};
 
-/* obtener un quiz completo (con preguntas) */
-export async function getQuiz(quizId: string): Promise<QuizDoc> {
-  try {
+export async function fetchQuizList(): Promise<QuizMeta[]> {
+  /* Backend responde:
+     { sets:[{id,title,total}], scores:{ quizId:{score,total} } } */
+  const { data } = await api.get<{
+    sets:   { id: string; title: string; total: number }[];
+    scores: Record<string, { score: number; total: number }>;
+  }>("/quizzes/sets");
+
+  return data.sets.map((s) => {
+    const sc = data.scores[s.id];
     return {
-      id: quizId,
-      title: "Cuestionario demo",
-      durationSec: 60,
-      maxAttempts: -1,
-      questions: [
-        {
-          id: "q1",
-          order: 1,
-          type: "multiple_choice",
-          questionText: "¿Cuál es la capital de Ecuador?",
-          options: ["Lima", "Quito", "La Paz", "Bogotá"],
-          correct: 1,
-        },
-        {
-          id: "q2",
-          order: 2,
-          type: "true_false",
-          questionText: "El Volcán Chimborazo es el punto más cercano al Sol.",
-          options: [],
-          correct: true,
-        },
-      ],
+      id: s.id,
+      title: s.title,
+      total: s.total,
+      completed: !!sc,
+      score: sc ? sc.score : 0,
     };
-    //const r = await api.get(`/quizzes/${quizId}`);
-    //return r.data.data;
-  } catch {
-    /* mock de demo con 2 preguntas */
-    return {
-      id: quizId,
-      title: "Cuestionario demo",
-      durationSec: 60,
-      maxAttempts: -1,
-      questions: [
-        {
-          id: "q1",
-          order: 1,
-          type: "multiple_choice",
-          questionText: "¿Cuál es la capital de Ecuador?",
-          options: ["Lima", "Quito", "La Paz", "Bogotá"],
-          correct: 1,
-        },
-        {
-          id: "q2",
-          order: 2,
-          type: "true_false",
-          questionText: "El Volcán Chimborazo es el punto más cercano al Sol.",
-          options: [],
-          correct: true,
-        },
-      ],
-    };
-  }
+  });
 }
 
-/* iniciar intento -> back devuelve AttemptDoc */
-export async function startAttempt(
+export type QuizQuestion = {
+  id: string;
+  prompt: string;
+  choices: string[];
+  answer: number;    // solo para validación local si quisieras
+};
+
+export async function getQuizQuestions(id: string): Promise<QuizQuestion[]> {
+  const { data } = await api.get<QuizQuestion[]>(`/quizzes/sets/${id}`);
+  return data;
+}
+
+export async function submitQuiz(
   quizId: string,
-  userId: string
-): Promise<AttemptDoc> {
-  try {
-    return {
-      id: "a1",
-      quizId,
-      userId,
-      startedAt: new Date(),
-      answers: [],
-    };
-    //const r = await api.post("/quizzes/attempts", { quizId, userId });
-    //return r.data.data;
-  } catch {
-    return {
-      id: "a1",
-      quizId,
-      userId,
-      startedAt: new Date(),
-      answers: [],
-    };
-  }
-}
-
-/* enviar respuestas */
-export async function submitAttempt(
-  attemptId: string,
-  answers: (number | boolean | string)[]
-): Promise<{ score: number; maxScore: number }> {
-  try {
-    const max = answers.length;
-    return { score: Math.round(max / 2), maxScore: max };
-    //const r = await api.post(`/quizzes/attempts/${attemptId}/submit`, {
-    //  answers,
-    //});
-    //return r.data.data;
-  } catch {
-    /* mock: 50 % aciertos */
-    const max = answers.length;
-    return { score: Math.round(max / 2), maxScore: max };
-  }
+  answers: number[]
+): Promise<{ score: number; total: number; gained: number }> {
+  const { data } = await api.post("/quizzes/submit", { quizId, answers });
+  return data.data;           // según createResponse
 }

@@ -1,6 +1,6 @@
-import { User } from "@/types/user";
 import { deleteSecure, saveSecure } from "@/utils/storage.util";
 import api from "../api/client";
+import { User } from "../types/user";
 
 export async function login(payload: { email: string; password: string }) {
   /**
@@ -44,3 +44,6 @@ export async function register(payload: {
 export async function logout() {
   await deleteSecure("token");
 }
+
+export { User };
+

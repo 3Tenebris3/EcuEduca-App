@@ -1,5 +1,6 @@
 import AuthTextInput from "@/components/ui/AuthTextInput";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import { login } from "@/services/auth.service";
 import { colors } from "@/theme/colors";
 import { extractApiError } from "@/utils/error.util";
 import { router } from "expo-router";
@@ -19,14 +20,14 @@ export default function LoginScreen() {
     setErrorMessage("");
     try {
       setLoading(true);
-      //const user = await login({ email, password });
+      const user = await login({ email, password });
       // Mock user info for testing
-      const user = {
-        id: 1,
-        name: "Usuario Demo",
-        email,
-        token: "mock-token-123",
-      };
+      //const user = {
+      //  id: 1,
+      //  name: "Usuario Demo",
+      //  email,
+      //  token: "mock-token-123",
+      //};
       setUser(user);
       router.replace("/(tabs)");
     } catch (e: any) {

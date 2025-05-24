@@ -1,28 +1,30 @@
-import api from "../api/client";
+// src/services/notification.service.ts
 
-export interface Notification {
-  id: string;
-  title: string;
+import api from "@/api/client";
+
+export type Notification = {
+  id:   string;
+  title:string;
   body: string;
-  date: string;   // ISO
+  date: string;
   type: "info" | "warning" | "reward";
   read: boolean;
+};
+
+export async function getNotifications(): Promise<Notification[]> {
+  const res = await api.get("/notifications");
+  return res.data.data as Notification[];
 }
 
-export async function getNotifications() {
-  const { data } = await api.get<{ data: Notification[] }>("/notifications");
-  return data.data;
+export async function createNotification(n: {
+  userId: string;
+  title:  string;
+  body:   string;
+  type:   "info" | "warning" | "reward";
+}) {
+  await api.post("/notifications", n);
 }
 
 export async function deleteNotification(id: string) {
-  return api.delete(`/notifications/${id}`);
-}
-
-export async function createNotification(payload: {
-  userId: string;
-  title: string;
-  body: string;
-  type?: "info" | "warning" | "reward";
-}) {
-  return api.post("/notifications", payload);
+  await api.delete(`/notifications/${id}`);
 }

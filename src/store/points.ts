@@ -1,13 +1,27 @@
+import { fetchRewards } from "@/services/reward.service";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface PointsState {
   points: number;
-  addPoints: (n: number) => void;
-  reset: () => void;
+  rewards: Record<string, boolean>;
+  sync: () => Promise<void>;
+  updatePoints: (n: number) => void;
 }
 
-export const usePointsStore = create<PointsState>((set) => ({
-  points: 0,                   // ← start value; update from minigames
-  addPoints: (n) => set((s) => ({ points: s.points + n })),
-  reset:    () => set({ points: 0 }),
-}));
+export const usePointsStore = create<PointsState>()(
+  persist(
+    (set, get) => ({
+      points: 0,
+      rewards: {},
+      sync: async () => {
+        const res = await fetchRewards();
+        set({
+          rewards: Object.fromEntries(res.claimed.map((id) => [id, true])),
+        });
+      },
+      updatePoints: (n) => set({ points: n }),
+    }),
+    { name: "ecueduca-points" }
+  )
+);

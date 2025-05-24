@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// -------- LOG de entrada --------
+// -------- LOG de entrada -------d-
 api.interceptors.response.use(
   (response) => {
     console.log(

@@ -93,7 +93,7 @@ export default function ProfileScreen() {
         <InfoRow label="Teléfono" value={user?.phone ?? "—"} />
         <InfoRow
           label="Rol"
-          value={roleToSpanish(user?.roles ?? user?.role ?? "")}
+          value={roleToSpanish(user?.role ?? user?.role ?? "")}
         />
       </InfoCard>
 

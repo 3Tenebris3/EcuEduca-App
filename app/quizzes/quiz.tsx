@@ -1,71 +1,106 @@
-import { usePointsStore } from "@/store/points";
+/* app/quizzes/quiz.tsx */
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-/* ── Banco de preguntas ── */
-type Q = { question: string; options: string[]; answer: string };
-
-const BANK: Record<string, Q[]> = {
-  quiz_egypt: [
-    { question: "¿Cuál es la pirámide más alta?", options: ["Micerinos", "Keops", "Saqqara", "Dashur"], answer: "Keops" },
-    { question: "El dios con cabeza de halcón es ___", options: ["Ra", "Anubis", "Horus", "Osiris"], answer: "Horus" },
-  ],
-  quiz_rome: [
-    { question: "Roma fue fundada en el año ___ a.C.", options: ["509", "753", "476", "30"], answer: "753" },
-    { question: "La moneda de plata romana era el ___", options: ["Dólar", "Denario", "Sestercio", "Aureo"], answer: "Denario" },
-  ],
-  quiz_middle: [
-    { question: "¿En qué año fue la caída de Constantinopla?", options: ["1453", "1492", "1215", "1066"], answer: "1453" },
-  ],
-};
+import {
+  getQuizQuestions,
+  QuizQuestion,
+  submitQuiz,
+} from "@/services/quiz.service";
+import { usePointsStore } from "@/store/points";
 
 export default function Quiz() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const questions = BANK[id] || [];
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [idx, setIdx]             = useState(0);
+  const [selected, setSelected]   = useState<number | null>(null);
+  const [answers, setAnswers]     = useState<number[]>([]);
+  const [loading, setLoading]     = useState(true);
 
-  const [idx, setIdx] = useState(0);
-  const [score, setScore] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const updatePoints = usePointsStore((s) => s.updatePoints);
 
-  const addPoints = usePointsStore((s) => s.addPoints);
+  /* ---- fetch questions ---- */
+  const load = useCallback(async () => {
+    try {
+      const data = await getQuizQuestions(id);
+      setQuestions(data);
+    } catch {
+      Alert.alert("Error", "No se pudo cargar el cuestionario", [
+        { text: "Volver", onPress: () => router.back() },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
-  const q = questions[idx];
+  useEffect(() => void load(), [load]);
 
-  const choose = (opt: string) => {
-    if (selected) return;
-    setSelected(opt);
-    if (opt === q.answer) setScore((s) => s + 1);
+  /* ---- interacción ---- */
+  const choose = (optIdx: number) => {
+    if (selected !== null) return;
+    setSelected(optIdx);
   };
 
-  const next = () => {
+  const next = async () => {
+    if (selected === null) return;
+    const nextAnswers = [...answers, selected];
+    setAnswers(nextAnswers);
+
     if (idx < questions.length - 1) {
       setIdx((i) => i + 1);
       setSelected(null);
     } else {
-      addPoints(score * 5); // 5 pts por acierto
-      router.replace({
-        pathname: "/quizzes/quiz-result",
-        params: { score: score.toString(), total: questions.length.toString() },
-      });
+      /* envía al backend y navega a resultado */
+      try {
+        const res = await submitQuiz(id, nextAnswers);
+        updatePoints(res.gained);          // suma puntos en el store
+        router.replace({
+          pathname: "/quizzes/quiz-result",
+          params: {
+            score: String(res.score),
+            total: String(res.total),
+          },
+        });
+      } catch {
+        Alert.alert("Error", "No se pudo enviar el cuestionario");
+      }
     }
   };
 
-  /* animación de entrada al cambiar idx */
-  useEffect(() => setSelected(null), [idx]);
+  /* ---- estados UI ---- */
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ fontSize: 18, color: "#555" }}>
+          No hay preguntas en este cuestionario.
+        </Text>
+      </View>
+    );
+  }
+
+  const q = questions[idx];
 
   return (
     <ScrollView contentContainerStyle={styles.wrapper}>
-      <Animated.Text
-        entering={FadeInDown.springify()}
-        style={styles.counter}
-      >
+      <Animated.Text entering={FadeInDown.springify()} style={styles.counter}>
         Pregunta {idx + 1} de {questions.length}
       </Animated.Text>
 
@@ -73,30 +108,24 @@ export default function Quiz() {
         entering={FadeInDown.springify().delay(100)}
         style={styles.question}
       >
-        {q.question}
+        {q.prompt}
       </Animated.Text>
 
-      {q.options.map((opt, i) => {
-        const correct = selected && opt === q.answer;
-        const wrongSel = selected === opt && opt !== q.answer;
-        const bg =
-          !selected
-            ? "#FFFDE7"
-            : correct
-            ? "#C8E6C9"
-            : wrongSel
-            ? "#FFCDD2"
-            : "#FFFDE7";
+      {q.choices.map((opt, i) => {
+        const correct   = selected !== null && i === q.answer;
+        const wrongSel  = selected === i && i !== q.answer;
+        const bg        = selected === null
+          ? "#FFFDE7"
+          : correct   ? "#C8E6C9"
+          : wrongSel  ? "#FFCDD2"
+          : "#FFFDE7";
 
         return (
-          <Animated.View
-            key={opt}
-            entering={FadeInDown.delay(150 + i * 40)}
-          >
+          <Animated.View key={i} entering={FadeInDown.delay(150 + i * 40)}>
             <TouchableOpacity
               style={[styles.option, { backgroundColor: bg }]}
-              onPress={() => choose(opt)}
-              disabled={!!selected}
+              onPress={() => choose(i)}
+              disabled={selected !== null}
             >
               <Text style={styles.optText}>{opt}</Text>
             </TouchableOpacity>
@@ -104,7 +133,7 @@ export default function Quiz() {
         );
       })}
 
-      {selected && (
+      {selected !== null && (
         <TouchableOpacity style={styles.nextBtn} onPress={next}>
           <Text style={styles.nextTxt}>
             {idx === questions.length - 1 ? "Ver resultado" : "Siguiente"}
@@ -115,24 +144,20 @@ export default function Quiz() {
   );
 }
 
+/* ---- styles ---- */
 const styles = StyleSheet.create({
   wrapper: { padding: 16, backgroundColor: "#FFFBE6", minHeight: "100%" },
+  center:  { flex: 1, justifyContent: "center", alignItems: "center" },
   counter: { fontSize: 18, color: "#6D4C41", marginBottom: 12 },
-  question: { fontSize: 22, fontWeight: "600", color: "#37474F", marginBottom: 20 },
-  option: {
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
+  question:{ fontSize: 22, fontWeight: "600", color: "#37474F", marginBottom: 20 },
+  option:  {
+    padding: 14, borderRadius: 14, marginBottom: 12,
+    borderWidth: 1, borderColor: "#eee",
   },
   optText: { fontSize: 18, color: "#424242" },
   nextBtn: {
-    marginTop: 24,
-    backgroundColor: "#2196F3",
-    padding: 14,
-    borderRadius: 16,
-    alignItems: "center",
+    marginTop: 24, backgroundColor: "#2196F3",
+    padding: 14, borderRadius: 16, alignItems: "center",
   },
   nextTxt: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

@@ -13,7 +13,7 @@ export const SCENES: SceneMeta[] = [
     id: "piramide",
     title: "Flor",
     desc: "Mira una flor.",
-    glbUrl: "https://raw.githubusercontent.com/3Tenebris3/EcuEduca-App/refs/heads/main/assets/models/blue_flower_animated.glb",
+    glbUrl: "https://raw.githubusercontent.com/3Tenebris3/EcuEduca-App/refs/heads/main/assets/models/wwtwoBuilding.glb",
     preview: require("../../assets/scenes/pyramid.png"),
     audio: null,
   },

@@ -12,7 +12,9 @@ import {
 import { Swipeable } from "react-native-gesture-handler";
 import { Screen } from "../../src/components/layout/Screen";
 import {
+  createNotification,
   deleteNotification,
+  getNotifications,
   Notification
 } from "../../src/services/notification.service";
 import { useAuthStore } from "../../src/store/useAuthStore";
@@ -45,18 +47,19 @@ export default function NotificationsScreen() {
 
   /* fetch inicial */
   useEffect(() => {
-    (async () => {
-      try {
-        setList(MOCK);
-        //const apiList = await getNotifications();
-        //setList(apiList.length ? apiList : MOCK);
-      } catch {
-        setList(MOCK);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchNotifications();
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const apiList = await getNotifications();
+      setList(apiList);
+    } catch {
+      setList(MOCK);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* swipe-delete handler */
   const handleDelete = async (id: string) => {
@@ -70,18 +73,19 @@ export default function NotificationsScreen() {
 
   /* crear notificación rápida mock */
   const handleCreate = async () => {
-    const dummy = {
+  try {
+    await createNotification({
       userId: user?.id ?? "",
       title: "Mensaje nuevo",
       body: "¡Hola mundo!",
-      type: "info" as const,
-    };
-    setList((l) => [
-      { ...dummy, id: Date.now().toString(), date: new Date().toISOString(), read: false },
-      ...l,
-    ]);
-    // await createNotification(dummy); // cuando el backend esté listo
-  };
+      type: "info",
+    });
+    const apiList = await getNotifications();
+    setList(apiList);
+  } catch {
+    Alert.alert("Error", "No se pudo crear");
+  }
+};
 
   /* ícono según type */
   const typeIcon = (t: Notification["type"]) => {

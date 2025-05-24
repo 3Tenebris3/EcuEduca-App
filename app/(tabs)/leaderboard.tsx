@@ -1,48 +1,66 @@
+import {
+  avatarSrc,
+  fetchLeaderboard,
+  Row,
+} from "@/services/leaderboard.service";
+import { colors } from "@/theme/colors";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import {
-  avatarSrc,
-  Row
-} from "../../src/services/leaderboard.service";
-import { colors } from "../../src/theme/colors";
-
-/* fallback de prueba */
-const MOCK: Row[] = [
-  { id: "1", avatar: "avatar2.png", name: "Ana", points: 345, rank: 1 },
-  { id: "2", avatar: "avatar7.png", name: "Beto", points: 330, rank: 2 },
-  { id: "3", avatar: "avatar14.png", name: "Carlos", points: 310, rank: 3 },
-  { id: "4", avatar: "avatar1.png", name: "Diana", points: 295, rank: 4 },
-  { id: "5", avatar: "avatar9.png", name: "Elena", points: 280, rank: 5 },
-];
 
 export default function LeaderboardScreen() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows]         = useState<Row[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [refreshing, setRefresh] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setRows(MOCK);
-        //const apiRows = await fetchLeaderboard();
-        //setRows(apiRows.length ? apiRows : MOCK);
-      } catch {
-        setRows(MOCK);
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const apiRows = await fetchLeaderboard();
+      setRows(apiRows.length ? apiRows : []);
+    } catch {
+      //setRows(MOCK);
+    } finally {
+      setLoading(false);
+      setRefresh(false);
+    }
   }, []);
 
-  /* separa top-3 y el resto */
-  const podium = rows.slice(0, 3);
+  /* primera carga */
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const podium  = rows.slice(0, 3);
   const reorderedPodium = [podium[1], podium[0], podium[2]];
-  const others = rows.slice(3);
+  const others  = rows.slice(3);
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { flex: 1 }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <View style={[styles.center, { flex: 1 }]}>
+        <Text style={{ fontSize: 18, fontWeight: "600" }}>
+          No hay datos disponibles
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -56,7 +74,7 @@ export default function LeaderboardScreen() {
         <Text style={styles.headerText}>Tabla de Puntuación</Text>
       </LinearGradient>
 
-      {/* ---------- PODIO ---------- */}
+      {/* ----- PODIO ----- */}
       {podium.length === 3 && (
         <View style={styles.podiumWrap}>
           {reorderedPodium.map((p, i) => (
@@ -65,32 +83,46 @@ export default function LeaderboardScreen() {
         </View>
       )}
 
-      {/* ---------- RESTO ---------- */}
+      {/* ----- RESTO ----- */}
       <FlatList
         data={others}
         keyExtractor={(r) => r.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         renderItem={({ item }) => <RowItem item={item} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => {
+            setRefresh(true);
+            load();
+          }} />
+        }
       />
     </>
   );
 }
 
-/* ――― Componentes auxiliares ――― */
+/* ---------- Componentes auxiliares ---------- */
 
 function PodiumColumn({ data, index }: { data: Row; index: number }) {
   const bg = ["#D6D6D6", "#FFD700", "#C4904E"][index];
-
-  const columnStyle = [
-    styles.podiumCol,
-    index === 1 && styles.podiumMid,
-  ];
+  const columnStyle = [styles.podiumCol, index === 1 && styles.podiumMid];
 
   return (
     <View style={columnStyle}>
-      {index === 1 && <FontAwesome5 name="crown" size={28} color="#FFD700" style={{ bottom: 6 }} />}
-      <Image source={avatarSrc(data.avatar)} style={[styles.podiumAvatar, { borderColor: bg }]} />
-      <Text numberOfLines={1} style={styles.podiumName}>{data.name}</Text>
+      {index === 1 && (
+        <FontAwesome5
+          name="crown"
+          size={28}
+          color="#FFD700"
+          style={{ bottom: 6 }}
+        />
+      )}
+      <Image
+        source={avatarSrc(data.avatar)}
+        style={[styles.podiumAvatar, { borderColor: bg }]}
+      />
+      <Text numberOfLines={1} style={styles.podiumName}>
+        {data.name}
+      </Text>
       <Text style={styles.podiumPts}>{data.points}</Text>
     </View>
   );
@@ -109,7 +141,7 @@ function RowItem({ item }: { item: Row }) {
   );
 }
 
-/* ――― STYLES ――― */
+/* ---------- STYLES ---------- */
 const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   header: {
@@ -136,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: width / 4,
   },
-  podiumMid: { marginBottom: 12 }, // centro más alto
+  podiumMid: { marginBottom: 12 },
   podiumAvatar: {
     width: 72,
     height: 72,
@@ -165,4 +197,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pointsText: { color: "#fff", fontWeight: "700" },
+
+  center: { justifyContent: "center", alignItems: "center" },
 });

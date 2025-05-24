@@ -12,6 +12,7 @@ export const openAR = async (glbUrl: string, title: string) => {
     `&title=${encodeURIComponent(title)}` +
     `&mode=ar_only`;
 
+    
   try {
     await Linking.openURL(sceneUrl);
     return; // abrió con Chrome → Scene Viewer
