@@ -1,92 +1,73 @@
+/* app/minigames/trivia-result.tsx */
 import { FontAwesome } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
-import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const TriviaResultScreen = () => {
-    const { id } = useLocalSearchParams<{ id: string }>();
-  const { score, total } = useLocalSearchParams<{ score: string; total: string }>();
-  const numericScore = parseInt(score || "0", 10);
-  const numericTotal = parseInt(total || "1", 10);
+export default function TriviaResultScreen() {
+  /* params enviados desde TriviaGame */
+  const { score, total, gained } = useLocalSearchParams<{
+    score:  string;
+    total:  string;
+    gained?: string;          // puede no venir si submit falló
+  }>();
 
-  const getMessage = () => {
-    const ratio = numericScore / numericTotal;
-    if (ratio === 1) return "¡Excelente! 🌟";
-    if (ratio >= 0.7) return "¡Muy bien! 🎉";
-    if (ratio >= 0.5) return "¡Buen intento! 💪";
-    return "¡Puedes hacerlo mejor! 🙌";
-  };
+  const correct = parseInt(score  ?? "0", 10);
+  const all     = parseInt(total  ?? "1", 10);
+  const bonus   = parseInt(gained ?? "0", 10);
+
+  /* mensaje motivacional */
+  const ratio = correct / all;
+  const msg =
+    ratio === 1   ? "¡Excelente! 🌟"          :
+    ratio >= 0.7  ? "¡Muy bien! 🎉"           :
+    ratio >= 0.5  ? "¡Buen intento! 💪"       :
+                    "¡Puedes hacerlo mejor! 🙌";
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🎊 Resultados 🎊</Text>
-      <Text style={styles.message}>{getMessage()}</Text>
-      <View style={styles.starsContainer}>
-        {[...Array(numericScore)].map((_, i) => (
-          <FontAwesome key={i} name="star" size={30} color="#FFD700" />
+      <Text style={styles.message}>{msg}</Text>
+
+      {/* estrellas */}
+      <View style={styles.stars}>
+        {[...Array(correct)].map((_, i) => (
+          <FontAwesome key={i} name="star"   size={32} color="#FFD700" />
         ))}
-        {[...Array(numericTotal - numericScore)].map((_, i) => (
-          <FontAwesome key={i} name="star-o" size={30} color="#CCC" />
+        {[...Array(all - correct)].map((_, i) => (
+          <FontAwesome key={i} name="star-o" size={32} color="#CCC"    />
         ))}
       </View>
-      <Text style={styles.scoreText}>
-        Obtuviste {numericScore} de {numericTotal} puntos.
+
+      <Text style={styles.score}>
+        {correct} de {all} correctas
       </Text>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.replace("/minigames")}
-      >
-        <Text style={styles.buttonText}>Volver a minijuegos</Text>
+      {!!bonus && (
+        <Text style={styles.bonus}>
+          +{bonus} puntos de recompensa 🎁
+        </Text>
+      )}
+
+      <TouchableOpacity style={styles.btn} onPress={() => router.replace("/minigames")}>
+        <Text style={styles.btnTxt}>Volver a minijuegos</Text>
       </TouchableOpacity>
     </View>
   );
-};
+}
 
-export default TriviaResultScreen;
-
+/* ───── styles ───── */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F3E5F5",
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#6A1B9A",
-    marginBottom: 16,
-  },
-  message: {
-    fontSize: 22,
-    color: "#333",
-    marginBottom: 24,
-  },
-  starsContainer: {
-    flexDirection: "row",
-    marginBottom: 24,
-  },
-  scoreText: {
-    fontSize: 18,
-    color: "#444",
-    marginBottom: 32,
-  },
-  button: {
-    backgroundColor: "#8E24AA",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  container:{ flex:1, backgroundColor:"#F3E5F5",
+              alignItems:"center", justifyContent:"center", padding:24 },
+
+  title:{ fontSize:28, fontWeight:"bold", color:"#6A1B9A", marginBottom:12 },
+  message:{ fontSize:22, color:"#4A148C", marginBottom:24, textAlign:"center" },
+
+  stars:{ flexDirection:"row", marginBottom:24 },
+  score:{ fontSize:18, color:"#4A148C", marginBottom:8 },
+  bonus:{ fontSize:18, color:"#1B5E20", marginBottom:32, fontWeight:"600" },
+
+  btn:{ backgroundColor:"#8E24AA", paddingVertical:14, paddingHorizontal:28, borderRadius:18 },
+  btnTxt:{ color:"#fff", fontSize:16, fontWeight:"600" },
 });

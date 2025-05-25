@@ -1,56 +1,88 @@
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import DraggableFlatList, {
-    ScaleDecorator,
+  ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 
-/* ──────────── Banco de datos ──────────── */
-type Item = { id: string; label: string; correctIndex: number };
+import {
+  getSequenceSet,
+  SeqItem,
+  submitSequence,
+} from "@/services/sequence.service";
+import { usePointsStore } from "@/store/points";
 
-const BANK: Record<string, Item[]> = {
-  seq1: [
-    { id: "djoser", label: "Djoser", correctIndex: 0 },
-    { id: "keops", label: "Keops", correctIndex: 1 },
-    { id: "tut", label: "Tutankamón", correctIndex: 2 },
-    { id: "ramses", label: "Ramsés II", correctIndex: 3 },
-    { id: "cleopatra", label: "Cleopatra VII", correctIndex: 4 },
-  ],
-  /* ...seq2, seq3 como antes... */
-};
+/* ――― helper ――― */
+const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
 export default function SequenceGame() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const initial = useMemo(
-    () => shuffle(BANK[id] || []),
-    [id],
-  );
+  const { id } = useLocalSearchParams<{ id: string }>(); // setId
 
-  const [data, setData] = useState<Item[]>(initial);
+  const [items, setItems] = useState<SeqItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* drag & drop */
-  const onDragEnd = ({ data: newData }: { data: Item[] }) => {
-    setData(newData);
-    Haptics.selectionAsync(); // vibración rápida
+  const updatePoints = usePointsStore((s) => s.updatePoints);
+
+  /* -------- cargar set -------- */
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const set = await getSequenceSet(id);
+        if (!active) return;
+        setItems(shuffle(set.items));
+      } catch {
+        router.back();
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  /* -------- drag & drop -------- */
+  const onDragEnd = ({ data }: { data: SeqItem[] }) => {
+    setItems(data);
+    Haptics.selectionAsync();
   };
 
-  /* comprobar */
-  const allCorrect = data.every(
-    (it, idx) => idx === it.correctIndex,
+  const correct = useMemo(
+    () => items.filter((it, idx) => idx === it.correctIndex).length,
+    [items],
   );
+  const allCorrect = items.length > 0 && correct === items.length;
 
-  const check = () =>
-    router.replace({
-      pathname: "/minigames/sequence-result",
-      params: {
-        correct: data.filter((it, idx) => idx === it.correctIndex).length.toString(),
-        total: data.length.toString(),
-      },
-    });
+  /* -------- comprobar -------- */
+  const check = async () => {
+    try {
+      const res = await submitSequence(id, correct, items.length);
+      updatePoints(res.gained);
+      router.replace({
+        pathname: "/minigames/sequence-result",
+        params: {
+          correct: String(correct),
+          total:   String(items.length),
+          gained:  String(res.gained),
+        },
+      });
+    } catch {
+      router.replace({
+        pathname: "/minigames/sequence-result",
+        params: { correct: String(correct), total: String(items.length) },
+      });
+    }
+  };
 
-  /* render item */
+  /* -------- render item -------- */
   const renderItem = ({ item, drag, isActive }: any) => (
     <ScaleDecorator>
       <Animated.View
@@ -75,6 +107,16 @@ export default function SequenceGame() {
     </ScaleDecorator>
   );
 
+  /* -------- loading -------- */
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  /* -------- UI -------- */
   return (
     <View style={styles.wrapper}>
       <Text style={styles.instruction}>
@@ -82,7 +124,7 @@ export default function SequenceGame() {
       </Text>
 
       <DraggableFlatList
-        data={data}
+        data={items}
         keyExtractor={(item) => item.id}
         onDragEnd={onDragEnd}
         renderItem={renderItem}
@@ -103,37 +145,23 @@ export default function SequenceGame() {
   );
 }
 
-/* ──────────── helpers ──────────── */
-function shuffle<T>(arr: T[]) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
-
-/* ──────────── estilos ──────────── */
+/* ――― styles ――― */
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#FFFBE6",
+  center:{ flex:1, justifyContent:"center", alignItems:"center" },
+
+  wrapper:{ flex:1, padding:16, backgroundColor:"#FFFBE6" },
+  instruction:{ fontSize:18, color:"#5D4037", marginBottom:16 },
+
+  card:{
+    padding:16, borderRadius:14, marginBottom:12,
+    borderWidth:1, borderColor:"#D7CCC8",
+    shadowColor:"#000", shadowOpacity:0.08, shadowRadius:3, elevation:2,
   },
-  instruction: { fontSize: 18, color: "#5D4037", marginBottom: 16 },
-  card: {
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#D7CCC8",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+  label:{ fontSize:18, color:"#37474F" },
+
+  checkBtn:{
+    marginTop:12, alignSelf:"center",
+    paddingVertical:14, paddingHorizontal:28, borderRadius:18,
   },
-  label: { fontSize: 18, color: "#37474F" },
-  checkBtn: {
-    marginTop: 12,
-    alignSelf: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 18,
-  },
-  checkText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  checkText:{ color:"#fff", fontSize:16, fontWeight:"600" },
 });
