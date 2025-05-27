@@ -1,23 +1,32 @@
+/* src/services/quiz.service.ts */
 import api from "../api/client";
 
 export type QuizMeta = {
   id: string;
   title: string;
-  total: number;      // número de preguntas
+  total: number;
   completed: boolean;
-  score: number;      // aciertos (si completed)
+  score: number;
 };
 
+/* ---------- LISTA DE QUIZZES ---------- */
 export async function fetchQuizList(): Promise<QuizMeta[]> {
-  /* Backend responde:
-     { sets:[{id,title,total}], scores:{ quizId:{score,total} } } */
-  const { data } = await api.get<{
-    sets:   { id: string; title: string; total: number }[];
-    scores: Record<string, { score: number; total: number }>;
+  /**
+   * El backend responde:
+   * { success, code, message, data:{ sets:[…], scores:{…} } }
+   */
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      sets:   { id: string; title: string; total: number }[];
+      scores: Record<string, { score: number; total: number }>;
+    };
   }>("/quizzes/sets");
 
-  return data.sets.map((s) => {
-    const sc = data.scores[s.id];
+  const { sets, scores } = res.data.data;   //  ←  CORREGIDO
+
+  return sets.map((s) => {
+    const sc = scores[s.id];
     return {
       id: s.id,
       title: s.title,
@@ -28,22 +37,18 @@ export async function fetchQuizList(): Promise<QuizMeta[]> {
   });
 }
 
-export type QuizQuestion = {
-  id: string;
-  prompt: string;
-  choices: string[];
-  answer: number;    // solo para validación local si quisieras
-};
-
-export async function getQuizQuestions(id: string): Promise<QuizQuestion[]> {
-  const { data } = await api.get<QuizQuestion[]>(`/quizzes/sets/${id}`);
-  return data;
+/* ---------- PREGUNTAS (sin respuestas) ---------- */
+export async function getQuizQuestions(id: string) {
+  const res = await api.get("/quizzes/sets/" + id);
+  return res.data.data as {
+    id: string;
+    prompt: string;
+    choices: string[];
+  }[];
 }
 
-export async function submitQuiz(
-  quizId: string,
-  answers: number[]
-): Promise<{ score: number; total: number; gained: number }> {
-  const { data } = await api.post("/quizzes/submit", { quizId, answers });
-  return data.data;           // según createResponse
+/* ---------- ENVIAR RESPUESTAS ---------- */
+export async function submitQuiz(quizId: string, answers: number[]) {
+  const res = await api.post("/quizzes/submit", { quizId, answers });
+  return res.data.data as { score: number; total: number; gained: number };
 }

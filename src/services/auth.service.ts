@@ -20,7 +20,6 @@ export async function login(payload: { email: string; password: string }) {
   return user as User;
 }
 
-
 export async function register(payload: {
   displayName: string;
   email: string;
@@ -28,12 +27,10 @@ export async function register(payload: {
   role?: "student" | "teacher" | "admin" | "parent";
 }) {
   try {
-    console.log("🚀 Register:", payload);
     const res = await api.post("/auth/register", payload);
-  const { token, user } = res.data.data;
-  console.log("🚀 Register:", res);
-  await saveSecure("token", token);
-  return user as User;
+    const { token, user } = res.data.data;
+    await saveSecure("token", token);
+    return user as User;
   } catch (error) {
     console.log("Register ~ error:", error);
     throw error;

@@ -1,6 +1,6 @@
 import { avatarKeys, avatars } from "@/constants/avatar";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,34 +29,61 @@ import { roleToSpanish } from "../../src/utils/role.util";
 export default function ProfileScreen() {
   const { user, setUser } = useAuthStore();
 
-  /* ----- extra info -------- */
+  /* ---------- extra info ---------- */
   const [teacher, setTeacher] = useState<any | null>(null);
   const [students, setStudents] = useState<any[]>([]);
+  const [loadingExtra, setLoadingExtra] = useState(false); // 🛡️ loader
 
-  /* ----- avatar modal state -------- */
+  /* ---------- avatar modal ---------- */
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(user?.avatar ?? avatarKeys[0]);
+  const [selected, setSelected] = useState(
+    user?.avatar ?? avatarKeys[0]
+  );
   const [saving, setSaving] = useState(false);
 
-  /* ----- fetch teacher/students on mount -------- */
+  /* ---------- password modal ---------- */
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [oldPwd, setOldPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [samePwd, setSamePwd] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  /* ---------- fetch info on mount ---------- */
   useEffect(() => {
-    if (user?.role === "student") {
-      getTeacherInfo().then(setTeacher);
-    }
-    if (user?.role === "teacher") {
-      getMyStudents().then(setStudents);
-    }
+    const fetchExtraInfo = async () => {
+      try {
+        setLoadingExtra(true);
+        if (user?.role === "student") {
+          const t = await getTeacherInfo();
+          setTeacher(t ?? null); // 🛡️ fallback
+        }
+        if (user?.role === "teacher") {
+          const list = await getMyStudents();
+          setStudents(Array.isArray(list) ? list : []); // 🛡️ fallback
+        }
+      } catch (e: any) {
+        console.error(e);
+        Alert.alert(
+          "Advertencia",
+          "No se pudo obtener la información adicional."
+        );
+      } finally {
+        setLoadingExtra(false);
+      }
+    };
+
+    if (user?.role) fetchExtraInfo();
   }, [user?.role]);
 
-  /* ----- handlers -------- */
+  /* ---------- handlers ---------- */
   const saveAvatar = async () => {
     try {
       setSaving(true);
       const updated = await updateAvatar(selected);
-      setUser(updated);
+      if (updated) setUser(updated);
       setOpen(false);
     } catch {
-      Alert.alert("Error", "No se pudo actualizar el avatar");
+      Alert.alert("Error", "No se pudo actualizar el avatar.");
     } finally {
       setSaving(false);
     }
@@ -67,54 +94,124 @@ export default function ProfileScreen() {
     setUser(null);
   };
 
-  /* ----- helpers -------- */
-  const avatarSrc =
-    avatars[avatarKeys.findIndex((k) => k === (user?.avatar ?? avatarKeys[0]))];
-  const [pwdOpen, setPwdOpen] = useState(false);
-  const [oldPwd, setOldPwd] = useState("");
-  const [newPwd, setNewPwd] = useState("");
-  const [samePwd, setSamePwd] = useState("");
-  const [pwdSaving, setPwdSaving] = useState(false);
+  const handleChangePassword = async () => {
+    try {
+      // 🛡️ validaciones antes de llamar a la API
+      if (!oldPwd || !newPwd || !samePwd) {
+        return Alert.alert(
+          "Campos requeridos",
+          "Completa todos los campos para cambiar tu contraseña."
+        );
+      }
+      if (newPwd !== samePwd) {
+        return Alert.alert(
+          "Contraseñas no coinciden",
+          "Verifica que ambas contraseñas nuevas sean iguales."
+        );
+      }
 
+      setPwdSaving(true);
+      await changePassword(oldPwd, newPwd);
+
+      Alert.alert("Éxito", "Contraseña actualizada.");
+      setPwdOpen(false);
+      setOldPwd("");
+      setNewPwd("");
+      setSamePwd("");
+    } catch (e: any) {
+      Alert.alert(
+        "Error",
+        e?.response?.data?.message ?? "No se pudo cambiar la contraseña."
+      );
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
+  /* ---------- helpers ---------- */
+  const avatarSrc =
+    avatars[
+      avatarKeys.findIndex(
+        (k) => k === (user?.avatar ?? avatarKeys[0])
+      )
+    ];
+
+  /* ---------- render ---------- */
   return (
     <ScrollView style={styles.container}>
-      {/* Avatar + edit icon */}
+      {/* ---------- Avatar ---------- */}
       <View style={styles.avatarWrapper}>
         <Image source={avatarSrc} style={styles.avatar} />
-        <TouchableOpacity style={styles.editBtn} onPress={() => setOpen(true)}>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={() => setOpen(true)}
+        >
           <Ionicons name="pencil" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* Main info */}
+      {/* ---------- Main info ---------- */}
       <InfoCard>
-        <InfoRow label="Nombre" value={user?.displayName} />
-        <InfoRow label="Correo" value={user?.email} />
+        <InfoRow label="Nombre" value={user?.displayName ?? "—"} />
+        <InfoRow label="Correo" value={user?.email ?? "—"} />
         <InfoRow label="Teléfono" value={user?.phone ?? "—"} />
         <InfoRow
           label="Rol"
-          value={roleToSpanish(user?.role ?? user?.role ?? "")}
+          value={
+            user?.role
+              ? roleToSpanish(user.role)
+              : "—"
+          }
         />
       </InfoCard>
 
-      {/* Extra blocks */}
-      {user?.role === "student" && teacher && (
+      {/* ---------- Extra blocks ---------- */}
+      {loadingExtra && (
+        <ActivityIndicator style={{ marginTop: 12 }} />
+      )}
+
+      {user?.role === "student" && !loadingExtra && (
         <InfoCard title="Profesor asignado">
-          <InfoRow label="Nombre" value={teacher.displayName} />
-          <InfoRow label="Correo" value={teacher.email} />
-          <InfoRow label="Teléfono" value={teacher.phone ?? "—"} />
+          {teacher ? (
+            <>
+              <InfoRow
+                label="Nombre"
+                value={teacher.displayName ?? "—"}
+              />
+              <InfoRow label="Correo" value={teacher.email ?? "—"} />
+              <InfoRow
+                label="Teléfono"
+                value={teacher.phone ?? "—"}
+              />
+            </>
+          ) : (
+            <Text style={styles.emptyText}>
+              Aún no tienes un profesor asignado.
+            </Text>
+          )}
         </InfoCard>
       )}
 
-      {user?.role === "teacher" && (
-        <InfoCard title={`Estudiantes (${students.length})`}>
-          {students.map((s) => (
-            <InfoRow key={s.id} label={s.displayName} value={s.email} small />
-          ))}
+      {user?.role === "teacher" && !loadingExtra && (
+        <InfoCard title={`Estudiantes (${students?.length ?? 0})`}>
+          {students?.length ? (
+            students.map((s) => (
+              <InfoRow
+                key={s.id}
+                label={s.displayName ?? "—"}
+                value={s.email ?? "—"}
+                small
+              />
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              No tienes estudiantes asignados por ahora.
+            </Text>
+          )}
         </InfoCard>
       )}
 
-      {/* Support */}
+      {/* ---------- Support ---------- */}
       <InfoCard title="Soporte">
         <Text>Correo: soporte@ecueduca.com</Text>
         <Text>Teléfono: +593 99-999-9999</Text>
@@ -125,27 +222,27 @@ export default function ProfileScreen() {
         onPress={() => setPwdOpen(true)}
         small
       />
-      <PrimaryButton title="Cerrar sesión" onPress={handleLogout} small />
+      <PrimaryButton
+        title="Cerrar sesión"
+        onPress={handleLogout}
+        small
+      />
 
-      {/* -------- Modal Avatar -------- */}
-      {/* -------- Modal Avatar -------- */}
+      {/* ---------- Modal Avatar ---------- */}
       <Modal
         visible={open}
         transparent
         animationType="fade"
         statusBarTranslucent
+        onRequestClose={() => setOpen(false)}
       >
-        {/* full-screen overlay */}
         <View style={styles.overlay}>
-          {/* tap anywhere outside the card -> close */}
           <TouchableOpacity
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
             onPress={() => setOpen(false)}
           />
-          {/* floating card */}
           <View style={styles.cardModal}>
-            {/* close icon */}
             <TouchableOpacity
               onPress={() => setOpen(false)}
               style={styles.closeBtn}
@@ -155,7 +252,6 @@ export default function ProfileScreen() {
 
             <Text style={styles.modalTitle}>Elige tu avatar</Text>
 
-            {/* list – 4 columns – own scroll */}
             <FlatList
               data={avatars}
               keyExtractor={(_, i) => i.toString()}
@@ -171,7 +267,10 @@ export default function ProfileScreen() {
                     onPress={() => setSelected(name)}
                     style={[
                       styles.avatarWrap,
-                      isSel && { borderColor: colors.primary, borderWidth: 2 },
+                      isSel && {
+                        borderColor: colors.primary,
+                        borderWidth: 2,
+                      },
                     ]}
                   >
                     <Image source={item} style={styles.avatarImg} />
@@ -183,16 +282,23 @@ export default function ProfileScreen() {
             {saving ? (
               <ActivityIndicator style={{ marginTop: 4 }} />
             ) : (
-              <PrimaryButton title="Guardar" onPress={saveAvatar} small />
+              <PrimaryButton
+                title="Guardar"
+                onPress={saveAvatar}
+                small
+              />
             )}
           </View>
         </View>
       </Modal>
+
+      {/* ---------- Modal Password ---------- */}
       <Modal
         visible={pwdOpen}
         transparent
         animationType="fade"
         statusBarTranslucent
+        onRequestClose={() => setPwdOpen(false)}
       >
         <View style={styles.overlay}>
           <TouchableOpacity
@@ -209,6 +315,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Cambiar contraseña</Text>
+
             <TextInput
               placeholder="Contraseña actual"
               secureTextEntry
@@ -236,27 +343,7 @@ export default function ProfileScreen() {
             ) : (
               <PrimaryButton
                 title="Guardar"
-                onPress={async () => {
-                  try {
-                    setPwdSaving(true);
-                    await changePassword(oldPwd, newPwd);
-                    if (newPwd !== samePwd) {
-                      return Alert.alert("Érror", "Las contraseñas no coinciden");
-                    }
-
-                    Alert.alert("Éxito", "Contraseña actualizada");
-                    setPwdOpen(false);
-                    setOldPwd("");
-                    setNewPwd("");
-                  } catch (e: any) {
-                    Alert.alert(
-                      "Error",
-                      e?.response?.data?.message ?? "No se pudo cambiar"
-                    );
-                  } finally {
-                    setPwdSaving(false);
-                  }
-                }}
+                onPress={handleChangePassword}
                 small
               />
             )}
@@ -268,7 +355,13 @@ export default function ProfileScreen() {
 }
 
 /* ---------- Small reusable pieces ---------- */
-const InfoCard = ({ children, title }: any) => (
+const InfoCard = ({
+  children,
+  title,
+}: {
+  children: React.ReactNode;
+  title?: string;
+}) => (
   <View style={styles.card}>
     {title && <Text style={styles.cardTitle}>{title}</Text>}
     {children}
@@ -277,7 +370,7 @@ const InfoCard = ({ children, title }: any) => (
 
 const InfoRow = ({
   label,
-  value,
+  value = "—", // 🛡️ valor por defecto
   small = false,
 }: {
   label: string;
@@ -285,8 +378,12 @@ const InfoRow = ({
   small?: boolean;
 }) => (
   <View style={styles.row}>
-    <Text style={[styles.rowLabel, small && { fontSize: 14 }]}>{label}</Text>
-    <Text style={[styles.rowValue, small && { fontSize: 14 }]}>{value}</Text>
+    <Text style={[styles.rowLabel, small && { fontSize: 14 }]}>
+      {label}
+    </Text>
+    <Text style={[styles.rowValue, small && { fontSize: 14 }]}>
+      {value}
+    </Text>
   </View>
 );
 
@@ -321,28 +418,15 @@ const styles = StyleSheet.create({
   rowLabel: { fontWeight: "600", color: colors.textLight },
   rowValue: { maxWidth: "60%", textAlign: "right" },
 
+  /* textos vacíos */
+  emptyText: {
+    textAlign: "center",
+    marginVertical: 8,
+    color: colors.textLight,
+    fontStyle: "italic",
+  },
+
   /* modal */
-  modalBg: { flex: 1, backgroundColor: "#0008", justifyContent: "center" },
-  modalCard: {
-    marginHorizontal: 24,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-  modalAvatarWrap: {
-    flex: 1,
-    alignItems: "center",
-    margin: 6,
-    borderRadius: 40,
-  },
-  modalAvatar: { width: 80, height: 80, borderRadius: 40 },
-  modalClose: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    padding: 6,
-  },
   overlay: {
     flex: 1,
     backgroundColor: "#0008",
@@ -363,6 +447,7 @@ const styles = StyleSheet.create({
     right: 8,
     padding: 6,
   },
+  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
   avatarWrap: {
     flex: 1,
     margin: 6,
@@ -376,5 +461,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginVertical: 6,
-  },  
+  },
 });

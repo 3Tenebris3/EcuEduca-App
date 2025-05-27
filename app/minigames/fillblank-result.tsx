@@ -1,13 +1,18 @@
 /* app/minigames/fillblank-result.tsx */
+import { saveMinigameProgress } from "@/services/progress.service";
 import { FontAwesome } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function FillBlankResult() {
   /* -------- parámetros -------- */
-  const { score, total } =
-    useLocalSearchParams<{ score?: string; total?: string }>();
+  const { score, total, id } =
+    useLocalSearchParams<{ score?: string; total?: string; id: string }>();
+
+    useEffect(() => {
+    saveMinigameProgress(id, parseInt(total || "0", 10)).catch(console.error);
+  }, []);
 
   const s = Number.isFinite(+score!) ? +score! : 0;  // fallback seguro
   const t = Number.isFinite(+total!) ? +total! : 1;

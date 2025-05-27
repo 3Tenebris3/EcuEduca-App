@@ -81,6 +81,7 @@ export default function TriviaGame() {
           score:  String(score),
           total:  String(questions.length),
           gained: String(gained),
+          id:     id,
         },
       });
     }

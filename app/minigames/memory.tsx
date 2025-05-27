@@ -164,7 +164,7 @@ export default function MemoryGame() {
         } catch (_) {/* silencioso */}
         router.replace({
           pathname: "/minigames/memory-result",
-          params: { moves: moves.toString(), pairs: pairs.length.toString() },
+          params: { id: id, moves: moves.toString(), pairs: pairs.length.toString(), gained: pairs.map((p) => p.id).join(",") },
         });
       })();
     }

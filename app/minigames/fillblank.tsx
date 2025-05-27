@@ -128,7 +128,7 @@ export default function FillBlank() {
       updatePoints(res.gained);                  // suma puntos
       router.replace({
         pathname: "/minigames/fillblank-result",
-        params: { score: String(res.score), total: String(res.total) },
+        params: { score: String(res.score), total: String(res.total), id: id },
       });
     } catch {
       Alert.alert("Error", "No se pudo enviar el resultado");

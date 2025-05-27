@@ -21,7 +21,12 @@ export default function useAuthRedirect() {
     if (!user && !inAuthGroup) {
       setTimeout(() => router.replace("/(auth)/login"), 0);
     } else if (user && inAuthGroup) {
-      setTimeout(() => router.replace("/(tabs)"), 0);
+      console.log("user", user);
+      if (user.role === "teacher") {
+        setTimeout(() => router.replace("/(teacher)"), 0);
+      } else {
+        setTimeout(() => router.replace("/(tabs)"), 0);
+      }
     }
   }, [user, segments]);
 }

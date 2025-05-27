@@ -1,15 +1,22 @@
+import { saveMinigameProgress } from "@/services/progress.service";
 import { FontAwesome } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function SequenceResult() {
   /* --- parámetros de navegación --- */
-  const { correct, total, gained } = useLocalSearchParams<{
+  const { correct, total, gained, id } = useLocalSearchParams<{
     correct: string;
     total:   string;
     gained?: string;            // ← opcional
+    id:      string;            // ← obligatorio
   }>();
+
+  /* ── registra avance SOLO una vez ── */
+  useEffect(() => {
+    saveMinigameProgress(id, parseInt(total, 10)).catch(console.error);
+  }, []);
 
   const c = parseInt(correct || "0", 10);
   const t = parseInt(total   || "1", 10);

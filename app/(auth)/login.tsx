@@ -21,18 +21,16 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const user = await login({ email, password });
-      // Mock user info for testing
-      //const user = {
-      //  id: 1,
-      //  name: "Usuario Demo",
-      //  email,
-      //  token: "mock-token-123",
-      //};
       setUser(user);
-      router.replace("/(tabs)");
+      console.log(user);
+      if (user.role === "teacher") {
+        router.replace("/(teacher)");
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (e: any) {
       // Axios agrupa la respuesta en e.response
-        setErrorMessage(extractApiError(e));
+      setErrorMessage(extractApiError(e));
     } finally {
       setLoading(false);
     }

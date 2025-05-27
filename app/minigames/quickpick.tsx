@@ -152,6 +152,7 @@ export default function QuickPick() {
           hits:    String(hits),
           misses:  String(misses),
           gained:  String(res.gained),
+          id:      id,
         },
       });
     } catch {

@@ -1,16 +1,23 @@
 /* app/minigames/trivia-result.tsx */
+import { saveMinigameProgress } from "@/services/progress.service";
 import { FontAwesome } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function TriviaResultScreen() {
   /* params enviados desde TriviaGame */
-  const { score, total, gained } = useLocalSearchParams<{
+  const { score, total, gained, id } = useLocalSearchParams<{
     score:  string;
     total:  string;
-    gained?: string;          // puede no venir si submit falló
+    gained?: string;
+    id:     string;
   }>();
+
+  /* ── registra avance SOLO una vez ── */
+  useEffect(() => {
+    saveMinigameProgress(id, parseInt(total, 10)).catch(console.error);
+  }, []);
 
   const correct = parseInt(score  ?? "0", 10);
   const all     = parseInt(total  ?? "1", 10);

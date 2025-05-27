@@ -72,6 +72,7 @@ export default function SequenceGame() {
           correct: String(correct),
           total:   String(items.length),
           gained:  String(res.gained),
+          id: id,
         },
       });
     } catch {

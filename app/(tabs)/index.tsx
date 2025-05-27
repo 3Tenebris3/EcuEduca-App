@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/useAuthStore";
 import {
   FontAwesome5,
   Ionicons,
@@ -17,7 +18,8 @@ import {
 const { width } = Dimensions.get("window");
 
 const IndexScreen = () => {
-  const userName = "Andrés"; // ← Puedes cambiar esto dinámicamente más adelante
+  const { user } = useAuthStore();   
+  const userName = user?.displayName;
 
   const sections = [
     {
@@ -48,13 +50,13 @@ const IndexScreen = () => {
       title: "Recompensas",
       icon: <Ionicons name="gift-outline" size={30} color="#fff" />,
       color: "#9C27B0",
-      onPress: () => router.push("/rewards"),
+      onPress: () => router.push("/points"),
     },
   ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.greeting}>¡Hola, {userName}! 👋</Text>
+      <Text style={styles.greeting}>¡Hola, {String(userName ?? 'Andrés')}! 👋</Text>
       <Text style={styles.subtitle}>¿Qué te gustaría explorar hoy?</Text>
 
       <View style={styles.cardContainer}>
